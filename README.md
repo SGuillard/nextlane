@@ -19,10 +19,10 @@ small. See `docs/project-plan.md` for the domain model and scope boundaries.
 
 | # | Artifact | Where |
 |---|----------|-------|
-| 1 | **Agent config & rules** | [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), [`.cursorrules`](.cursorrules) |
-| 2 | **Reusable skills & subagents** | [`skills/grillme-with-docs/`](skills/grillme-with-docs/SKILL.md) |
-| 3 | **Day-2 agents** | [`agents/day-2/`](agents/day-2/) — `build-feature`, `triage-bug` |
-| 4 | **Eval & verification loop** | `npm run verify` gate + the GrillMe AI review (see below) |
+| 1 | **Agent config & rules** | [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), [`.cursorrules`](.cursorrules), [`docs/definition-of-done.md`](docs/definition-of-done.md) |
+| 2 | **Reusable skills & subagents** | [`skills/scaffold-new-module/`](skills/scaffold-new-module/SKILL.md), [`skills/domain-review/`](skills/domain-review/SKILL.md), [`skills/grillme-with-docs/`](skills/grillme-with-docs/SKILL.md) |
+| 3 | **Day-2 agents** | [`agents/day-2/`](agents/day-2/) — `build-feature`, `triage-bug`, `generate-migration`, `dependency-upgrade`, `on-call-diagnostics` |
+| 4 | **Eval & verification loop** | `npm run verify` gate + CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) + the [agent-eval harness](eval/README.md) + the `domain-review` / GrillMe review gates |
 
 ## Running the app
 
@@ -71,15 +71,35 @@ and provide the bug report, observed vs expected behavior, reproduction steps,
 and any logs. The agent reproduces, finds the smallest fix, adds a regression
 test, and runs verification.
 
-## How to run the review skill
+## How to run the skills
 
-[`skills/grillme-with-docs`](skills/grillme-with-docs/SKILL.md) is the AI review
-gate. Run it before every commit: it pressure-tests the change against the brief
-on a 1–5 rubric (case-study alignment, AI leverage, DMS domain quality,
-engineering safety, documentation alignment) and emits a `Pass` /
-`Pass with fixes` / `Needs work` verdict plus required fixes. In Claude Code it
-is invoked as `/grillme-with-docs`; with any other agent, have it follow the
+[`skills/scaffold-new-module`](skills/scaffold-new-module/SKILL.md) — the
+highest-leverage rail. Give it a short module spec (entity, fields, statuses,
+validation rules) and it generates a complete vertical slice (Prisma model +
+migration, validation + tests, route + UI, seed, docs) that already passes the
+gate. Use it when adding a new entity/module; use `build-feature` for changes to
+an existing entity.
+
+[`skills/domain-review`](skills/domain-review/SKILL.md) — the **automated**
+review gate the day-2 agents run before proposing a commit. A mechanical,
+DMS-aware checklist (vocabulary, invalid-state coverage, status-graph
+completeness, migration rollback, fail-closed auth) returning `Pass` / `Fail`.
+
+[`skills/grillme-with-docs`](skills/grillme-with-docs/SKILL.md) — the **manual,
+staff-level** pressure-test against the brief on a 1–5 rubric, emitting `Pass` /
+`Pass with fixes` / `Needs work`. Run both: `domain-review` is the repeatable
+gate that does not depend on a human; GrillMe is the judgment layer on top. In
+Claude Code each is invoked as `/<skill-name>`; with any other agent, follow the
 `SKILL.md` workflow directly.
+
+## How to run the eval
+
+[`eval/`](eval/README.md) tests the **rails themselves**, not just the app:
+golden feature specs that the agents must implement completely (every layer of
+[`definition-of-done.md`](docs/definition-of-done.md)) and seeded bad changes
+the review gate must reject. `npm run verify` is the deterministic, CI-enforced
+gate; the agent-eval is run on demand because it needs an AI agent to drive each
+spec. See [`eval/README.md`](eval/README.md).
 
 ## The day-2 loop
 
@@ -91,10 +111,13 @@ Ship → Observe & triage → AI proposes change → Verify & gate → Ship
 ## Repository map
 
 ```txt
-docs/        case study brief, project plan, strategy, implementation options
+docs/        brief, project plan, build spec, definition of done, strategy, options
 AGENTS.md    canonical rules for all AI agents
 CLAUDE.md    Claude-specific working protocol
 .cursorrules Cursor conventions
-skills/      reusable review skill (grillme-with-docs)
-agents/day-2 day-2 agents (build-feature, triage-bug)
+skills/      reusable skills (scaffold-new-module, domain-review, grillme-with-docs)
+agents/day-2 day-2 agents (build-feature, triage-bug, generate-migration,
+             dependency-upgrade, on-call-diagnostics)
+eval/        agent-eval harness (golden specs, regression fixtures, assertions)
+.github/     CI workflow (the enforced npm run verify gate)
 ```

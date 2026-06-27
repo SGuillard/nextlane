@@ -67,10 +67,16 @@ type WorkshopAppointmentStatus =
   | "done"
   | "cancelled";
 
+type ServiceBay = {
+  id: string;
+  name: string; // "Bay 1" — the finite resource the conflict rule guards
+};
+
 type WorkshopAppointment = {
   id: string;
   customerId: string;
   vehicleId: string;
+  serviceBayId: string;
   startsAt: string;
   endsAt: string;
   status: WorkshopAppointmentStatus;
@@ -78,6 +84,10 @@ type WorkshopAppointment = {
   notes?: string;
 };
 ```
+
+> See `docs/build-spec.md` for the concrete, build-against version of this model
+> (routes, validation placement, auth, folder shape). `serviceBayId` is what
+> makes the no-double-booking rule below a real, dealership-grounded constraint.
 
 ### Screens
 
@@ -118,12 +128,13 @@ contradictions between docs read as a scoping failure.
 ### 2. Reusable skills & subagents
 
 - `grillme-with-docs` — critiques a change against the brief and forces docs +
-  tests to move with code (already drafted).
+  tests to move with code (drafted).
 - `scaffold-new-module` — generates a new vertical slice (schema → validation →
-  UI → tests → docs) from a short spec. This is the highest-leverage artifact;
-  it is what makes day-2 fast.
-- A domain-aware code reviewer skill (DMS vocabulary, invalid-state checks,
-  rollback path for schema changes).
+  UI → tests → docs) from a short spec. The highest-leverage artifact; it is
+  what makes day-2 fast (drafted; see `skills/scaffold-new-module/`).
+- `domain-review` — the automatable, DMS-aware code-level review gate (vocabulary,
+  invalid-state checks, status-graph completeness, rollback path). The gate that
+  runs without a human; GrillMe is the manual judgment layer on top (drafted).
 
 ### 3. Day-2 agents
 
@@ -191,6 +202,11 @@ change and **blocks** on:
 A small eval set targets the agents themselves, not an in-product LLM: given a
 feature spec, does `build-feature` touch all of schema/validation/UI/tests/docs
 and pass the gate? Does the reviewer catch a seeded invalid-state regression?
+This is drafted in `eval/` — golden specs (`eval/golden-specs.md`), seeded bad
+changes the gate must reject (`eval/regression-fixtures.md`), and deterministic
+assertions (`eval/assertions.md`). "Done" for any change is defined once in
+`docs/definition-of-done.md`, which the rules, agents, review skills, and eval
+all reference.
 
 ## Technical architecture
 

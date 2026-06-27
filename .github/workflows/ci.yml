@@ -1,0 +1,23 @@
+name: CI
+
+# The deterministic, enforced gate. Runs on every PR and on push to main.
+# Green is the merge condition. (The agent-eval in eval/ is run on demand
+# because it needs an AI agent in the loop; this workflow enforces the
+# deterministic half: lint + typecheck + test + build.)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify

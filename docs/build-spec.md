@@ -150,15 +150,27 @@ is never set in deployment and is documented as such.
 
 ## Data layer
 
-- **Prisma** with `provider = "postgresql"` for the deployed app and a hosted
-  free-tier Postgres; local dev uses the same provider against a local Postgres
-  (Docker or a free dev branch) to avoid SQLite↔Postgres migration drift.
-  *Trade-off noted:* if local Postgres is friction, fall back to SQLite locally
-  but generate migrations against Postgres before deploy.
-- `prisma/schema.prisma` mirrors the domain model above.
+- **Prisma** with `provider = "postgresql"`. Production is a **Supabase**
+  free-tier Postgres; local dev runs the same engine via the Supabase CLI
+  (`supabase start`, Postgres in Docker) so there is **no provider mismatch** —
+  migrations are generated against the same database they ship to.
+- **Two connection strings (the Prisma-on-serverless detail that matters):**
+  - `DATABASE_URL` → Supabase **pooled** connection (PgBouncer, port `6543`,
+    transaction mode). The app's runtime uses this so serverless fan-out cannot
+    exhaust Postgres connections.
+  - `DIRECT_URL` → Supabase **direct** connection (port `5432`). Prisma uses
+    this for `migrate` / introspection, which need a non-pooled session.
+  Both are env vars, never committed; documented in the README.
+- `prisma/schema.prisma` mirrors the domain model above and declares both
+  `url = env("DATABASE_URL")` and `directUrl = env("DIRECT_URL")`.
 - `prisma/seed.ts` seeds: 3–4 service bays, a handful of customers + vehicles,
   and a spread of appointments across statuses so the panel can log in and
   click around immediately.
+
+> We use Supabase only as a hosted Postgres (database + connection pooler). We
+> are **not** adopting Supabase Auth, its client SDK, or row-level security —
+> basic auth stays in middleware and all access goes through Prisma. Keeps the
+> dependency surface small and the slice portable.
 
 ## File / folder shape (flat and conventional)
 
@@ -261,6 +273,6 @@ The prepared demo task is **cancellation reason** (already specified in
 7. `scaffold-new-module` skill (so it can scaffold future slices).
 8. Wire `npm run verify` + CI + the `grillme-with-docs` gate.
 9. Reconcile docs (README status, agent roster) with reality.
-10. Deploy to free-tier host; confirm login works on the live URL.
+10. Deploy to Vercel + Supabase Postgres; confirm login works on the live URL.
 11. Prepare the cancellation-reason demo task end to end.
 ```

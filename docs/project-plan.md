@@ -211,7 +211,9 @@ all reference.
 ## Technical architecture
 
 - Next.js App Router + TypeScript.
-- Prisma; SQLite locally, Postgres on the deployed host.
+- Prisma over Postgres everywhere — **Supabase** free-tier Postgres in
+  production, the same engine locally via the Supabase CLI (no provider
+  mismatch). See `docs/build-spec.md` for the pooled/direct connection split.
 - Tailwind CSS.
 - Vitest (unit) + Playwright (e2e).
 - Basic auth via middleware (env-driven; see `ai-rails-strategy.md`).
@@ -227,7 +229,7 @@ skills, tests. No speculative `agents/` fleet, no `vector-store/`, no
 
 ## Deployment & auth
 
-- Deploy to a free-tier host (Vercel + a hosted Postgres, or equivalent).
+- Deploy to Vercel (free tier) with a Supabase free-tier Postgres as the store.
 - Middleware basic auth, credentials from env vars, documented in the README.
 - Seed an admin-visible dataset so the panel can log in and click around.
 

@@ -1,3 +1,8 @@
+---
+name: grillme-with-docs
+description: Pressure-test a proposed Nextlane case study change against the brief and keep docs aligned with the implementation. Use before committing a feature, bug fix, migration, agent update, or documentation change.
+---
+
 # GrillMe with Docs
 
 Review workflow for the Nextlane case study.
@@ -17,10 +22,12 @@ Pressure-test a change against the case study brief and keep the documentation a
 
 ## Read first
 
+- `docs/case-study-brief.md` (authoritative scoring and scope)
 - `README.md`
+- `docs/project-plan.md`
 - `docs/case-study-implementation-options.md`
 - `docs/ai-rails-strategy.md`
-- `AGENTS.md` when present
+- `AGENTS.md`
 - Changed files
 
 ## Rubric

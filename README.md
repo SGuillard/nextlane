@@ -9,6 +9,15 @@ that let an AI agent keep extending and operating it after day one.
 > extensibility proven live (25 %). This repository is organized around that
 > reality — see `docs/project-plan.md`.
 
+> **⚠️ Status — rails first, app pending.** The AI-engineering rails (rules,
+> skills, day-2 agents, eval, CI) are committed and are the current deliverable.
+> The DMS application slice is **specified but not yet implemented** — there is
+> no `package.json` or app code on this branch yet, so the `npm run …` commands
+> below do not run today. The build spec is in
+> [`docs/build-spec.md`](docs/build-spec.md); the implementation sequence is in
+> [`docs/project-plan.md`](docs/project-plan.md). This banner comes down when
+> the app shell lands.
+
 ## The slice
 
 Service & Workshop Scheduling: customers, their vehicles, and workshop
@@ -24,11 +33,12 @@ small. See `docs/project-plan.md` for the domain model and scope boundaries.
 | 3 | **Day-2 agents** | [`agents/day-2/`](agents/day-2/) — `build-feature`, `triage-bug`, `generate-migration`, `dependency-upgrade`, `on-call-diagnostics` |
 | 4 | **Eval & verification loop** | `npm run verify` gate + CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) + the [agent-eval harness](eval/README.md) + the `domain-review` / GrillMe review gates |
 
-## Running the app
+## Running the app (planned interface — not yet runnable)
 
-> Status: the application slice is the build target described in
-> `docs/project-plan.md`. The commands below are the canonical interface the
-> rails and CI rely on.
+> These are the canonical commands the rails and CI are built around. They do
+> **not** work yet — the app shell (`package.json` + code) is not on this branch.
+> Once it lands, this section becomes the real run guide and the status banner
+> above is removed.
 
 ```bash
 npm install

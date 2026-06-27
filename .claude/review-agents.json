@@ -1,0 +1,6 @@
+{
+  "agents": [
+    { "skill": "security-review", "enabled": true },
+    { "skill": "code-review", "enabled": true }
+  ]
+}

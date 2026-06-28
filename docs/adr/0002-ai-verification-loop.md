@@ -44,3 +44,7 @@ also eval the rails themselves, not just the app.
 - The CI gate is enforced server-side by branch protection on `main` (a hard
   guarantee beyond the client-side `block-commit-on-main` hook) — recorded as a
   deferred to-do in [operations.md](../operations.md).
+- Refined post-ship by two later decisions: production bug triage
+  ([ADR-0004](0004-production-bug-triage.md)) and a heterogeneous advisory PR
+  reviewer ([ADR-0005](0005-heterogeneous-pr-review.md)), which adds a second
+  different-family review on top of the same-family `domain-review`.

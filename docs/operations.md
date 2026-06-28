@@ -6,7 +6,8 @@ captured and can be applied later. Nothing here is wired up yet — each item is
 to-do with the exact steps to do it.
 
 Related decisions: the CI gate and verification loop (ADR-0002); stack, auth,
-and deploy (ADR-0001).
+and deploy (ADR-0001); production bug triage (ADR-0004); heterogeneous advisory
+PR review (ADR-0005).
 
 ## TODO
 
@@ -14,6 +15,8 @@ and deploy (ADR-0001).
 - [ ] Confirm Vercel preview-per-PR + production-from-`main`-only — see below.
 - [ ] Turn on Vercel **skew protection** (Pro) — see below.
 - [ ] Set up a **manual-approval canary** rolling release (Pro) — see below.
+- [ ] Add the **heterogeneous AI review** as a required status check — see below.
+- [ ] Wire **bug-triage intake**: bug issue template + `triage` label + trigger — see below.
 
 ---
 
@@ -112,3 +115,65 @@ bad change in front of dealers, and to recover in seconds if one slips through.
 + one-click rollback + **skew protection** + a **manual-approval canary**.
 Automatic percentage ramps are a deliberate "not yet" — gated by traffic, not by
 cost.
+
+---
+
+## 3. Heterogeneous AI review as a required check (GitHub)
+
+Decision and rationale: ADR-0005. A second AI reviewer from a **different model
+family** posts severity-tagged findings (`error` / `warn` / `info`) on every PR.
+The findings are **advisory** (they inform the human's merge click, they do not
+auto-veto), but **merge is blocked until the review has run and posted**.
+
+**How it gates.** The review is a CI job that posts a PR review, then exits `0`
+whenever it *completed*, and non-zero only if it **failed to run**. Add that job
+as a **required status check** so merge is blocked until the review exists — the
+guard is "a fresh-eyes review happened," not "the review approved."
+
+**To wire it (run later, needs GitHub access + a second-model API key):**
+
+- Add the review job to `.github/workflows/` (calls a different-family model;
+  reads the PR diff; posts findings via the PR review API; exits `0` on completion,
+  non-zero only on infra/API failure). Store the API key as a repo secret.
+- Add its check name to branch protection's required checks, next to `verify`:
+
+  ```bash
+  gh api -X PATCH repos/sguillard/nextlane/branches/main/protection/required_status_checks \
+    -F 'contexts[]=verify' \
+    -F 'contexts[]=ai-review'
+  ```
+
+- The lowest-friction starting point is **GitHub Copilot code review**
+  (`request_copilot_review`) — a different model, native integration, no key to
+  manage — promoted to a required check.
+
+**Knobs (per ADR-0005):** keep it **advisory** for now (an `error` finding does
+not block merge — a human can override with eyes open). A future hard-stop is a
+one-line flip: make the job exit non-zero on `error`. Tier it to
+invariant-touching changes and hotfixes; trivial fixes skip it.
+
+---
+
+## 4. Bug-triage intake (GitHub)
+
+Decision and rationale: ADR-0004. Production bugs funnel into one structured
+GitHub issue, which triggers a `triage-bug` run.
+
+**To wire it (run later, needs GitHub access):**
+
+- Add `.github/ISSUE_TEMPLATE/bug.yml` with the reproducibility fields: expected
+  vs actual, affected entity (`Quote` id), timestamp, **deployment id**, and
+  logs/stack trace. This is the intake contract the triage agent consumes.
+- Add a `triage` label; a bug issue carrying it kicks a Claude Code session that
+  runs the triage flow.
+- **Runtime tripwires (app code, not a setting):** assert the domain invariants
+  (`total = Σ lines − discount`, forward-only state machine) at runtime in
+  production; on violation, auto-open a `triage` issue with the entity and
+  deployment id pre-filled. This is the highest-value detection source — it
+  catches silent corruption no user reports.
+- **Boundary (ADR-0004):** auto-intake, **never auto-merge** — an issue body is
+  untrusted input, so triage proposes a PR and a human acks the merge.
+
+**Deferred at current scale (ADR-0003):** Sentry auto-issue integration and a
+cron "on-call diagnostics" log sweep. Vercel runtime errors cover detection until
+traffic grows.

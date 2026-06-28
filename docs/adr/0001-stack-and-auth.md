@@ -20,3 +20,6 @@ reusable skills already in the repo (Prisma, TypeScript, auth).
 - Users live in Prisma tables; domain rows reference the user id for the
   `createdBy` attribution, but the user record is owned by the auth layer.
 - Lock-in is real (DB + auth), which is why this is recorded.
+- Deployment safety controls (Vercel previews, production-from-`main`, skew
+  protection, canary rollouts) live in Vercel settings, not the repo — recorded
+  as deferred to-dos in [operations.md](../operations.md).

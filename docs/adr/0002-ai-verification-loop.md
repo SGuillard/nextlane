@@ -41,3 +41,6 @@ also eval the rails themselves, not just the app.
   commit → PR → review logic lives in one place.
 - Interactive runs use a feature branch; the eval harness uses git worktrees for
   parallel, clean-state runs.
+- The CI gate is enforced server-side by branch protection on `main` (a hard
+  guarantee beyond the client-side `block-commit-on-main` hook) — recorded as a
+  deferred to-do in [operations.md](../operations.md).

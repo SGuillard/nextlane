@@ -12,6 +12,8 @@ and deploy (ADR-0001).
 
 - [ ] Enable branch protection on `main` (GitHub) — see below.
 - [ ] Confirm Vercel preview-per-PR + production-from-`main`-only — see below.
+- [ ] Turn on Vercel **skew protection** (Pro) — see below.
+- [ ] Set up a **manual-approval canary** rolling release (Pro) — see below.
 
 ---
 
@@ -64,7 +66,13 @@ rules above.
 **Why.** Deployment is the last gap after the CI gate. The goal is to never put a
 bad change in front of dealers, and to recover in seconds if one slips through.
 
-**Adopt now (free tier, high value):**
+> **Plan note.** This project is on the Vercel **Pro** plan, so rolling releases
+> and skew protection are both available (rolling releases are plan-gated —
+> lower tiers return `plan_not_supported` — but Pro is supported). The earlier
+> "defer because it's paid" reasoning does not apply here; the question is value
+> vs. complexity, not cost.
+
+**Adopt now (high value, low cost):**
 
 - **Preview deployment per PR.** Every PR gets its own live URL — review the real
   thing before merge, alongside the gate. Usually on by default; confirm under
@@ -75,16 +83,32 @@ bad change in front of dealers, and to recover in seconds if one slips through.
 - **Instant rollback.** Vercel keeps prior production deployments; if something
   slips through, **Deployments → ⋯ → Promote/Rollback** reverts in one click. No
   setup needed — just know it's there.
+- **Skew protection (Pro).** Pins a client session to the deployment version it
+  loaded, so a dealer with an old tab open during a deploy doesn't hit
+  version-skew errors. One toggle (**Settings → Advanced**, or the framework
+  adapter, e.g. `skewProtection: true`); a real correctness safeguard,
+  independent of traffic volume. No reason to defer it now that we're on Pro.
+- **Manual-approval canary (rolling release, Pro).** Deploy to production as a
+  canary, smoke-check it, then approve to 100% — a gate between "built in prod"
+  and "fully live" that pays off even at low traffic:
 
-**Defer (over-ceremony for this slice):**
+  ```bash
+  vercel rolling-release configure --enable --advancement-type=manual-approval
+  # deploy, then once verified:
+  vercel rolling-release approve --dpl <deployment-url> --currentStageIndex 0
+  vercel rolling-release complete --dpl <deployment-url>
+  ```
 
-- **Gradual / percentage-based Rollouts** (shift X% of production traffic to a new
-  deployment, then ramp). This is a Vercel **Pro/Enterprise paid feature**. For a
-  single-dealership (ADR-0003), free-tier slice it's more machinery than the risk
-  warrants — exactly the kind of over-ceremony ADR-0002 cautions against. Revisit
-  only if traffic and blast radius grow.
-- **Skew protection** (pins client/server to the same deployment version during a
-  rollout). Useful at scale; not needed for one dealership. Note for later.
+**Defer (available on Pro, but low value at current scale):**
 
-**Net:** previews + production-from-`main` + one-click rollback give the safety
-that matters here for ~zero cost; staged rollouts are a deliberate "not yet."
+- **Automatic percentage ramps** (e.g. `--stage 10,5m --stage 50,10m`). Gradual
+  ramps earn their value by *sampling real traffic* before going wide; a single
+  dealership (ADR-0003) has too little traffic for a 10% canary to be a
+  meaningful sample, so automatic ramps add machinery without much signal here.
+  Keep the manual-approval canary above; switch to automatic ramps if traffic
+  and blast radius grow.
+
+**Net:** on Pro, the safety that matters here is previews + production-from-`main`
++ one-click rollback + **skew protection** + a **manual-approval canary**.
+Automatic percentage ramps are a deliberate "not yet" — gated by traffic, not by
+cost.
